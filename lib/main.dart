@@ -1,13 +1,24 @@
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'dart:js' as js;
+import 'dart:ui_web' as ui;
 
 void main() {
-  runApp(const MyApp());
+  final imgElement = html.ImageElement()
+    ..style.width = '300px'
+    ..style.height = '300px';
+
+  ui.platformViewRegistry.registerViewFactory('image_element', (int viewId) {
+    return imgElement; // Register once
+  });
+
+  runApp(MyApp(imgElement: imgElement));
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  final html.ImageElement imgElement;
+
+  const MyApp({super.key, required this.imgElement});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -18,7 +29,8 @@ class _MyAppState extends State<MyApp> {
 
   void _toggleTheme() {
     setState(() {
-      _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+      _themeMode =
+          _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
     });
   }
 
@@ -29,14 +41,20 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
       themeMode: _themeMode,
-      home: HomePage(toggleTheme: _toggleTheme),
+      home: HomePage(
+        toggleTheme: _toggleTheme,
+        imgElement: widget.imgElement, // Pass imgElement to HomePage
+      ),
     );
   }
 }
 
 class HomePage extends StatefulWidget {
   final VoidCallback toggleTheme;
-  const HomePage({super.key, required this.toggleTheme});
+  final html.ImageElement imgElement; // Receive imgElement
+
+  const HomePage(
+      {super.key, required this.toggleTheme, required this.imgElement});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -67,26 +85,24 @@ class _HomePageState extends State<HomePage> {
     ]);
   }
 
-  void _updateImage() {
+  Future<void> _updateImage() async {
     if (_urlController.text.isNotEmpty) {
       String newImageUrl = _urlController.text;
+
       setState(() {
-        imageUrl = null;
+        widget.imgElement.src = newImageUrl;
+        imageUrl = newImageUrl;
       });
 
-      imgElement = html.ImageElement()
-        ..src = newImageUrl
-        ..onLoad.listen((event) {
-          setState(() {
-            imageUrl = newImageUrl;
-          });
-        })
-        ..onError.listen((event) {
-          print("Failed to load image: $newImageUrl");
-        });
+      widget.imgElement.onLoad.listen((event) {
+        print("Image loaded successfully: $newImageUrl");
+      });
+
+      widget.imgElement.onError.listen((event) {
+        print("Failed to load image: $newImageUrl");
+      });
     }
   }
-
 
   void _toggleMenu() {
     setState(() {
@@ -175,14 +191,17 @@ class _HomePageState extends State<HomePage> {
                   FloatingActionButton(
                     onPressed: _toggleMenu,
                     backgroundColor: showMenu ? Colors.red : Colors.green,
-                    child: showMenu ? const Icon(Icons.close, color: Colors.white) : const Icon(Icons.add, color: Colors.white),
+                    child: showMenu
+                        ? const Icon(Icons.close, color: Colors.white)
+                        : const Icon(Icons.add, color: Colors.white),
                   ),
                   const SizedBox(height: 8),
                   FloatingActionButton(
                     onPressed: widget.toggleTheme,
-                    backgroundColor: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : Colors.black,
+                    backgroundColor:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black,
                     child: Icon(
                       Theme.of(context).brightness == Brightness.dark
                           ? Icons.light_mode
