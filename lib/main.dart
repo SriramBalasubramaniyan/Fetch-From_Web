@@ -4,14 +4,17 @@ import 'dart:js' as js;
 import 'dart:ui_web' as ui;
 
 void main() {
+  //Create HTML ImageElement with pre defined size
   final imgElement = html.ImageElement()
     ..style.width = '300px'
     ..style.height = '300px';
 
+  // set ImageElement as platform view for flutter
   ui.platformViewRegistry.registerViewFactory('image_element', (int viewId) {
-    return imgElement; // Register once
+    return imgElement;
   });
 
+  // run MyApp and pass imgElement as parameter
   runApp(MyApp(imgElement: imgElement));
 }
 
@@ -27,6 +30,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   ThemeMode _themeMode = ThemeMode.system;
 
+  // Function to Toggle between light and dark mode.
   void _toggleTheme() {
     setState(() {
       _themeMode =
@@ -42,7 +46,7 @@ class _MyAppState extends State<MyApp> {
       darkTheme: ThemeData.dark(),
       themeMode: _themeMode,
       home: HomePage(
-        toggleTheme: _toggleTheme,
+        toggleTheme: _toggleTheme, // Pass Theme Controller
         imgElement: widget.imgElement, // Pass imgElement to HomePage
       ),
     );
@@ -50,7 +54,7 @@ class _MyAppState extends State<MyApp> {
 }
 
 class HomePage extends StatefulWidget {
-  final VoidCallback toggleTheme;
+  final VoidCallback toggleTheme;  // Receive Theme Controller
   final html.ImageElement imgElement; // Receive imgElement
 
   const HomePage(
@@ -69,10 +73,11 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    imgElement = html.ImageElement()..style.width = '100%';
-    html.document.body?.append(imgElement);
+    imgElement = html.ImageElement()..style.width = '100%'; // set imgElement width to 100% of the image
+    html.document.body?.append(imgElement); // append image to HTML body
   }
 
+  // JavaScript function to toggle full screen.
   void _toggleFullscreenJS() {
     js.context.callMethod('eval', [
       """
@@ -85,31 +90,36 @@ class _HomePageState extends State<HomePage> {
     ]);
   }
 
+  // Update the image based on the given URL
   Future<void> _updateImage() async {
     if (_urlController.text.isNotEmpty) {
       String newImageUrl = _urlController.text;
 
       setState(() {
-        widget.imgElement.src = newImageUrl;
+        widget.imgElement.src = newImageUrl; //set imgElement source to given URL
         imageUrl = newImageUrl;
       });
 
+      // listen to image load
       widget.imgElement.onLoad.listen((event) {
         print("Image loaded successfully: $newImageUrl");
       });
 
+      // listen to image error
       widget.imgElement.onError.listen((event) {
         print("Failed to load image: $newImageUrl");
       });
     }
   }
 
+  // toggle menu visibility
   void _toggleMenu() {
     setState(() {
       showMenu = !showMenu;
     });
   }
 
+  // close floating menu if opened
   void _closeMenu() {
     if (showMenu) {
       setState(() {
@@ -220,6 +230,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Widget to create full screen toggle button
   Widget _fullscreenButton() {
     bool isFullscreen = html.document.fullscreenElement != null;
     return ElevatedButton(
